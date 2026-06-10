@@ -1,65 +1,186 @@
-# Task-Manager-using-Flask
+# Task Manager (Flask)
 
-A simple web application to store your To-Do Tasks .
+Aplicação web simples para gerenciar suas tarefas (To-Do), com autenticação de usuários.
+Construída com Flask, SQLAlchemy, Flask-Login e Bootstrap.
 
-# Features
+## Funcionalidades
 
-- User Authentication
-- Easy to use and deploy locally.
+- Cadastro e autenticação de usuários (senha com hash via Bcrypt)
+- Proteção de rotas: páginas internas exigem login
+- CRUD completo de tarefas (criar, listar, atualizar e excluir)
+- Configurações de conta: alterar nome de usuário e senha
+- Páginas de erro customizadas (404 / 403 / 500)
 
-# Requirements
+## Tecnologias
 
-Execute the following command to install the required third party libraries:
+| Camada | Stack |
+|--------|-------|
+| Backend | Flask 3.0.3, Werkzeug 3.0.6 |
+| ORM / Banco | Flask-SQLAlchemy 3.1.1 (SQLite) |
+| Autenticação | Flask-Login 0.6.3, Flask-Bcrypt 1.0.1 |
+| Formulários | Flask-WTF 1.2.1, WTForms 3.1.2 |
+| Frontend | Jinja2 3.1.4 + Bootstrap |
+| Testes | pytest, pytest-cov |
 
-```pip3 install -r requirements.txt```
+---
 
-# Usage
+## Pré-requisitos
 
-1. Clone the repository using the following command
-    
-    ```git clone https://github.com/AdityaBagad/Task-Manager-using-Flask.git```
+- Python 3.10+ (testado com Python 3.14)
+- `pip` e `venv`
 
-2. Install the dependencies using
+## Instalação
 
-    ```cd  Task-Manager-using-Flask```
-    
-    ```pip3 install -r requirements.txt```
+1. Clone o repositório:
 
-3. Run this command to start the application
+   ```bash
+   git clone https://github.com/jaimeneto85/Task-Manager-using-Flask.git
+   cd Task-Manager-using-Flask
+   ```
 
-    ```cd todo_project```
+2. Crie e ative um ambiente virtual:
 
-    ```python run.py```
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate        # Windows: venv\Scripts\activate
+   ```
 
-# Results
+3. Instale as dependências da aplicação:
 
-## Registration Page
-Login or Register if you dont have an account
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-![Registration Page](output/register.jpg)
+## Como executar a aplicação
 
-## Accessing URL's 
-User cannot access any URL's if they are not logged in
+```bash
+cd todo_project
+python run.py
+```
 
-![Invalid Access](output/invalid-access.jpg)
+A aplicação ficará disponível em **http://127.0.0.1:5000**. O banco SQLite
+(`instance/site.db`) é criado automaticamente no primeiro boot.
 
-## After Successfull Login
-See all your tasks after successfull login.
+### Configuração por variáveis de ambiente (opcional)
 
-![After Login](output/after-login.jpg)
+A aplicação roda com padrões seguros para desenvolvimento, mas aceita
+configuração via ambiente:
 
-## Add Tasks
-Click the **Add Task** link in the side-bar to add tasks
+| Variável | Padrão | Descrição |
+|----------|--------|-----------|
+| `SECRET_KEY` | valor de desenvolvimento | Chave usada para sessões/CSRF |
+| `DATABASE_URI` | `sqlite:///site.db` | URI de conexão do banco |
+| `TESTING` | `False` | Quando `1`, ativa modo de teste e desliga CSRF |
 
-![Image of Yaktocat](output/add-task.jpg)
+```bash
+export SECRET_KEY="sua-chave-secreta"
+export DATABASE_URI="sqlite:///site.db"
+```
 
-## View All Tasks
-Click the **View All Task** link in the side-bar to see all tasks. You can **Update** and **Delete** Tasks from this page.
+---
 
-![Image of Yaktocat](output/all-tasks.jpg)
+## Como executar os testes
 
-## Account Settings
-Change your username and password. You can access this by clicking dropdown in the Navbar
+A suíte de testes usa **pytest** com **pytest-cov** e impõe um gate mínimo de
+**90% de cobertura** (atualmente em **100%**).
 
-![Image of Yaktocat](output/account-settings.jpg)
+1. Instale as dependências de teste (uma única vez):
 
+   ```bash
+   pip install -r requirements-dev.txt
+   ```
+
+2. Rode a suíte completa a partir da **raiz do projeto**:
+
+   ```bash
+   pytest
+   ```
+
+O `pytest.ini` já habilita o relatório de cobertura e o gate `--cov-fail-under=90`,
+então o comando acima roda os testes e valida a cobertura automaticamente.
+
+### Comandos úteis
+
+```bash
+pytest -v                                   # saída detalhada por teste
+pytest todo_project/tests/test_models.py    # roda um arquivo específico
+pytest -k login                             # roda testes que casam com "login"
+pytest --cov-report=html                    # gera relatório HTML em htmlcov/
+```
+
+Saída esperada:
+
+```
+47 passed
+Required test coverage of 90% reached. Total coverage: 100.00%
+```
+
+| Módulo | Cobertura |
+|--------|-----------|
+| `todo_project/__init__.py` | 100% |
+| `todo_project/forms.py` | 100% |
+| `todo_project/models.py` | 100% |
+| `todo_project/routes.py` | 100% |
+
+---
+
+## Telas da aplicação
+
+### Página Inicial / Sobre
+Página pública de apresentação da aplicação.
+
+![Página Sobre](output/about.jpg)
+
+### Cadastro
+Crie uma conta informando usuário e senha. Caso já tenha conta, faça login.
+
+![Página de Cadastro](output/register.jpg)
+
+### Proteção de Rotas
+Sem login, qualquer tentativa de acesso a páginas internas redireciona para o
+login com um aviso.
+
+![Acesso Inválido](output/invalid-access.jpg)
+
+### Após o Login
+Ao autenticar, você é levado à lista das suas tarefas.
+
+![Após o Login](output/after-login.jpg)
+
+### Adicionar Tarefa
+Use o link **Add Task** na barra lateral para cadastrar novas tarefas.
+
+![Adicionar Tarefa](output/add-task.jpg)
+
+### Ver Todas as Tarefas
+O link **View All Tasks** lista suas tarefas, com botões para **Atualizar** e
+**Excluir** cada uma.
+
+![Todas as Tarefas](output/all-tasks.jpg)
+
+### Configurações da Conta
+Altere seu nome de usuário e senha pelo menu do usuário na barra de navegação.
+
+![Configurações da Conta](output/account-settings.jpg)
+
+---
+
+## Estrutura do projeto
+
+```
+Task-Manager-using-Flask/
+├── requirements.txt              # dependências da aplicação
+├── requirements-dev.txt          # dependências de teste
+├── pytest.ini                    # configuração do pytest + cobertura
+├── output/                       # imagens usadas no README
+└── todo_project/
+    ├── run.py                    # ponto de entrada
+    └── todo_project/
+        ├── __init__.py           # app, config, db, login manager, bcrypt
+        ├── models.py             # modelos User e Task
+        ├── routes.py             # rotas (auth + CRUD de tarefas)
+        ├── forms.py              # formulários Flask-WTF
+        ├── templates/            # templates Jinja2
+        ├── static/               # CSS e Bootstrap
+        └── tests/                # suíte de testes (pytest)
+```
