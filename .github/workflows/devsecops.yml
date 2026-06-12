@@ -165,6 +165,7 @@ jobs:
           target: 'http://localhost:5000'
           cmd_options: '-a'
           artifact_name: 'zap-baseline-report'
+          allow_issue_writing: false
 
       # Upload do relatório do ZAP para análise posterior
       - name: Upload ZAP Report
