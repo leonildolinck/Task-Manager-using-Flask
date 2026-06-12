@@ -1,0 +1,102 @@
+stages:
+  - build
+  - test
+  - sast
+  - deploy_staging
+  - dast_staging
+
+variables:
+  DOCKER_DRIVER: overlay2
+  STAGING_APP_URL: "http://staging-task-manager:8080"
+
+# Executa o build de consistência e instala dependências de projeto
+build_job:
+  stage: build
+  image: python:3.11-alpine
+  script:
+    - python -m venv venv
+    - source venv/bin/activate
+    - pip install --upgrade pip
+    - pip install -r requirements.txt
+  artifacts:
+    paths:
+      - venv/
+    expire_in: 1 hour
+
+# Executa a suite de testes automatizados unitários e funcionais
+test_job:
+  stage: test
+  image: python:3.11-alpine
+  dependencies:
+    - build_job
+  script:
+    - source venv/bin/activate
+    - python -m unittest discover -s tests/
+
+# Executa análise estática de código (SAST) buscando vulnerabilidades no Python
+sast_bandit:
+  stage: sast
+  image: python:3.11-alpine
+  dependencies:
+    - build_job
+  script:
+    - source venv/bin/activate
+    - pip install bandit
+    - bandit -r todo_project/ -f json -o bandit-report.json
+  artifacts:
+    name: bandit-sast-results
+    when: always
+    paths:
+      - bandit-report.json
+    reports:
+      sast: bandit-report.json
+
+# Executa a varredura de vulnerabilidades de dependências (SCA)
+sca_pip_audit:
+  stage: sast
+  image: python:3.11-alpine
+  dependencies:
+    - build_job
+  script:
+    - source venv/bin/activate
+    - pip install pip-audit
+    - pip-audit -r requirements.txt --format json --output pip-audit-report.json
+  artifacts:
+    name: sca-dependency-results
+    when: always
+    paths:
+      - pip-audit-report.json
+
+# Implantação automatizada do container no ambiente de testes (Staging)
+deploy_to_staging:
+  stage: deploy_staging
+  image: docker:24.0
+  services:
+    - docker:24.0-dind
+  script:
+    - docker build -t task-manager:staging.
+    - docker rm -f staging-task-manager || true
+    # Inicializa o container mapeando o syslog do host para persistência de logs de auditoria
+    - docker run -d --name staging-task-manager -p 8080:8080 -v /dev/log:/dev/log task-manager:staging
+  environment:
+    name: staging
+    url: http://staging-task-manager:8080
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "staging"'
+
+# Varredura dinâmica de segurança (DAST) em Staging via OWASP ZAP
+dast_zap_scan:
+  stage: dast_staging
+  image: ghcr.io/zaproxy/zaproxy:stable
+  script:
+    - mkdir -p /zap/wrk
+    # Executa análise de linha de base (passive-scan com spidering rápido)
+    - zap-baseline.py -t $STAGING_APP_URL -g gen.conf -r zap-dast-report.html || true
+    - cp /zap/wrk/zap-dast-report.html $CI_PROJECT_DIR/zap-dast-report.html
+  artifacts:
+    name: zap-dast-html-report
+    when: always
+    paths:
+      - zap-dast-report.html
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "staging"'
