@@ -1,12 +1,12 @@
 # Este estágio serve apenas para compilar e preparar as dependências
-FROM python:3.14-alpine AS builder
+FROM python:3.12-alpine AS builder
 WORKDIR /app
 RUN apk add --no-cache gcc musl-dev libffi-dev
 COPY requirements.txt .
 RUN pip install --user --no-cache-dir -r requirements.txt
 
 # Este estágio é a imagem final que será usada para rodar a aplicação
-FROM python:3.14-alpine
+FROM python:3.12-alpine
 WORKDIR /app
 # Criando um usuário não-root para rodar a aplicação de forma mais segura
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
